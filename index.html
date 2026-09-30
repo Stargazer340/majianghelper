@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>杭州麻将辅助</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">🀄 杭州麻将辅助</div>
+    <button id="installBtn" class="install-btn" hidden>安装到主屏</button>
+  </header>
+
+  <main>
+    <!-- 摄像头辅助 -->
+    <section class="card camera-card">
+      <div class="card-title">📷 摄像头辅助 <span class="muted">(最佳努力 / 仅供参考)</span></div>
+      <div id="camWrap" class="cam-wrap" hidden>
+        <video id="cam" autoplay playsinline muted></video>
+        <canvas id="shot" hidden></canvas>
+      </div>
+      <div class="cam-actions">
+        <button id="camToggle" class="btn">开启摄像头</button>
+        <button id="camSnap" class="btn" hidden>拍照</button>
+        <button id="camSwitch" class="btn" hidden>翻转镜头</button>
+        <button id="camRecognize" class="btn warn" hidden>识别并填入(待核实)</button>
+      </div>
+      <p class="disclaimer">
+        自动识别需在手机端加载识别模型，当前为<strong>最佳努力</strong>方案：拍到的牌会<strong>预填并请你核实</strong>，
+        识别结果<strong>不一定准确</strong>，最终以你手动点选为准。单摄像头看不到整桌，请勿完全依赖。
+      </p>
+    </section>
+
+    <!-- 当前手牌 -->
+    <section class="card">
+      <div class="card-title">🃏 我的手牌 <span id="handCount" class="badge">0</span> 张</div>
+      <div id="handView" class="hand-view"></div>
+      <div class="joker-row">
+        <span>财神(百搭)：</span>
+        <button class="mini" id="jokerMinus">−</button>
+        <span id="jokerCount" class="joker-num">0</span>
+        <button class="mini" id="jokerPlus">＋</button>
+        <span class="muted">（白板为财神，可摸不可用）</span>
+      </div>
+      <div class="hand-actions">
+        <button id="undoBtn" class="btn ghost">撤销</button>
+        <button id="clearBtn" class="btn ghost">清空</button>
+      </div>
+    </section>
+
+    <!-- 点牌面板 -->
+    <section class="card">
+      <div class="card-title">➕ 点牌输入</div>
+      <div id="palette" class="palette"></div>
+      <p class="muted small">点上面的牌加入手牌；点「我的手牌」里的牌可减一张。凑满 13 张看听牌，凑 14 张(含刚摸的)看出牌建议。</p>
+    </section>
+
+    <!-- 牌河 / 已现牌 -->
+    <section class="card river-card">
+      <div class="card-title">🌊 牌河 / 已现牌 <span id="riverCount" class="badge">0</span> 张</div>
+      <p class="muted small">点这里记录<strong>别人打出的牌、碰杠亮出的牌、自己打出的牌</strong>（每张点一次；碰=3 次、杠=4 次）。已知现牌越多，<strong>死听</strong>判断越准；缺记只影响死活提示，不影响基础向听。</p>
+      <div class="river-actions">
+        <button id="riverModeBtn" class="btn ghost">模式：记录 +1</button>
+        <button id="riverClearBtn" class="btn ghost">清空牌河</button>
+      </div>
+      <div id="riverPalette" class="palette river-palette"></div>
+    </section>
+
+    <!-- 分析结果 -->
+    <section class="card result-card">
+      <div class="card-title">📊 实时分析</div>
+      <div class="shanten-box">
+        <div id="shantenNum" class="shanten-num">–</div>
+        <div id="shantenLabel" class="shanten-label">请先输入手牌</div>
+      </div>
+      <div id="statusLine" class="status-line"></div>
+
+      <div id="waitsBlock" class="block" hidden>
+        <div class="block-title">听牌</div>
+        <div id="waitsView" class="tile-row"></div>
+      </div>
+
+      <div id="adviseBlock" class="block" hidden>
+        <div class="block-title">出牌建议（点一行看详情）</div>
+        <div id="adviseView" class="advise-list"></div>
+      </div>
+
+      <div id="fanBlock" class="block" hidden>
+        <div class="block-title">预估番数</div>
+        <div class="fan-opts">
+          <label><input type="checkbox" id="optGangkai"> 杠开 ×2</label>
+          <label><input type="checkbox" id="optQianggang"> 抢杠 ×2</label>
+        </div>
+        <div id="fanView" class="fan-view"></div>
+      </div>
+    </section>
+
+    <p class="foot-note">
+      规则依据：杭州麻将（136张，无花牌；财神=白板百搭；只能自摸；有财必拷响；番数相乘）。
+      本工具为合规娱乐辅助，<strong>不提供任何概率数字、不冒充官方、不贬低他人</strong>。识别/建议仅供参考。
+    </p>
+  </main>
+
+  <script src="engine.js"></script>
+  <script src="recognize.js"></script>
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
